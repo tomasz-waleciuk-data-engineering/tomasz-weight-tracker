@@ -11,7 +11,7 @@ def _ensure_log_directory(base_path=None):
     or keep 'logs' subdir in the project root folder"""
 
     # resolves project root, provided this module is contained
-    # in a subdirectory, hence '1 level down'
+    # in a subdirectory, hence '1 level down' - passed by NUMBER_OF_LEVELS_FROM_PROJECT_ROOT
     project_root = nth_level_parent_dir(base_path, NUMBER_OF_LEVELS_FROM_PROJECT_ROOT)
 
     # logs stored in 'logs' subfolder
