@@ -1,2 +1,7 @@
-credentials.json
-utils/*
+utils/credentials.json
+one_minute_usage*
+secrets.toml
+secrets-for-streamlit.toml
+
+utils/sensors_csv_source/*
+utils/sensors_csv_target/*
