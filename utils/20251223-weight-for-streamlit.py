@@ -247,7 +247,7 @@ if not df.empty:
     df['time'] = df['time'].astype(str)
     
     df['date_time'] = pd.to_datetime(
-        df['date'] + df['time'],
+        df['date'] + ' ' + df['time'],
         format='mixed', 
         errors='coerce'
     )
