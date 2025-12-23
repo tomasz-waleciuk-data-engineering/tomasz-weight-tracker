@@ -285,11 +285,11 @@ if not df.empty:
     st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1),h2))
     st.warning(f'All readings for {days_since} days')    
     
-    # --- PASTE THIS DEBUG BLOCK ---
-    st.error("--- DEBUGGING COLUMNS ---")
-    st.write("Columns found:", fig_01_df.columns.tolist())
-    st.write("First 5 rows of data:", fig_01_df.head())
-    # ------------------------------
+    # # --- PASTE THIS DEBUG BLOCK ---
+    # st.error("--- DEBUGGING COLUMNS ---")
+    # st.write("Columns found:", fig_01_df.columns.tolist())
+    # st.write("First 5 rows of data:", fig_01_df.head())
+    # # ------------------------------
     
     if 'Weight' in fig_01_df.columns and 'BMI' in fig_01_df.columns:
         st.dataframe(fig_01_df[['Weight', 'BMI']])
