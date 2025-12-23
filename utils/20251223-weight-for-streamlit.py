@@ -17,27 +17,36 @@ from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 # ==========================================
 # 1. CONFIGURATION
 # ==========================================
-# REPLACE WITH YOUR ACTUAL FOLDER ID
+# <--- PASTE YOUR FOLDER ID HERE --->
 FOLDER_ID = '15RsQDnJLZTqmqmpQrUsJ-BDEODOmDm5k' 
 MASTER_CSV_NAME = "processed_weight_data_cache.csv"
 
+# Try to import local module (fails gracefully on cloud)
+try:
+    import read_my_file as rmf
+except ImportError:
+    rmf = None
+
 # ==========================================
-# 2. HELPER FUNCTIONS (PARSING & AUTH)
+# 2. PAGE CONFIG (Must be first)
+# ==========================================
+page_layout = st.sidebar.radio("Page layout:", options=['centered', 'wide'])
+st.set_page_config(layout=page_layout, page_title="Weight Tracker")
+
+# ==========================================
+# 3. HELPER FUNCTIONS (CLOUD & PARSING)
 # ==========================================
 
 def parse_txt_content(content, file_id="unknown"):
     """
-    Parses the custom text format:
-    Line 2: Time:08:22, Fri,12/ 19/2025
-    Line 3+: Weight:90.4kg  ↑   Overweight
+    Parses your specific text format.
     """
     rows = []
     lines = content.strip().split('\n')
     
     if len(lines) < 3: return []
 
-    # --- Header Parsing ---
-    # Expected: "Time:08:22, Fri,12/ 19/2025"
+    # Header: "Time:08:22, Fri,12/ 19/2025"
     header_line = lines[1]
     if "Time:" not in header_line: return []
         
@@ -49,36 +58,33 @@ def parse_txt_content(content, file_id="unknown"):
     except:
         return []
 
-    # --- Body Parsing ---
+    # Body: "Weight:90.4kg  ↑   Overweight"
     for line in lines[2:]:
         if ':' not in line: continue
         try:
             key_part, rest_part = line.split(':', 1)
             attribute = key_part.strip()
             
-            # Regex split by whitespace
+            # Split rest by spaces
             tokens = re.split(r'\s+', rest_part.strip())
             
             raw_value = tokens[0]
-            # Clean units
             clean_value = raw_value.replace('kg','').replace('%','').replace('kcal','')
             
             info_symbol = tokens[1] if len(tokens) > 1 else ""
             info_txt = " ".join(tokens[2:]) if len(tokens) > 2 else ""
             
-            # Row structure: [Day, Date, Time, Attribute, Value, Symbol, Text, SourceID]
+            # MATCH YOUR ORIGINAL DATAFRAME COLUMNS + source_file_id
             row = [day_name, date_str, time_str, attribute, clean_value, info_symbol, info_txt, file_id]
             rows.append(row)
         except:
             continue
-            
     return rows
 
 @st.cache_resource
 def get_drive_service():
-    """Authenticates with Google Drive API."""
+    """Authenticates with Google Drive."""
     creds = None
-    # 1. Streamlit Secrets
     try:
         if "gcp_service_account" in st.secrets:
             creds = service_account.Credentials.from_service_account_info(
@@ -86,7 +92,6 @@ def get_drive_service():
             )
     except: pass
 
-    # 2. Local File
     if not creds and os.path.exists('credentials.json'):
         creds = service_account.Credentials.from_service_account_file('credentials.json')
 
@@ -94,7 +99,6 @@ def get_drive_service():
     return build('drive', 'v3', credentials=creds)
 
 def download_file_content(service, file_id):
-    """Downloads a single file as string."""
     try:
         request = service.files().get_media(fileId=file_id)
         fh = io.BytesIO()
@@ -103,185 +107,269 @@ def download_file_content(service, file_id):
         while not done: _, done = downloader.next_chunk()
         fh.seek(0)
         return fh.read().decode('utf-8')
-    except:
-        return ""
+    except: return ""
 
-# ==========================================
-# 3. INCREMENTAL SYNC LOGIC
-# ==========================================
-
-def get_master_cache_data(service, folder_id):
-    """Downloads the consolidated CSV if it exists."""
+def get_master_cache(service, folder_id):
     q = f"'{folder_id}' in parents and name = '{MASTER_CSV_NAME}' and trashed=false"
     results = service.files().list(q=q, fields="files(id)").execute()
     files = results.get('files', [])
-    
     if not files: return None, None
     
     csv_id = files[0]['id']
     content = download_file_content(service, csv_id)
     try:
-        df = pd.read_csv(io.StringIO(content))
-        return df, csv_id
-    except:
-        return None, csv_id
+        return pd.read_csv(io.StringIO(content)), csv_id
+    except: return None, csv_id
 
-def upload_master_cache_data(service, df, folder_id, existing_id=None):
-    """Uploads the updated dataframe back to Drive."""
+def upload_master_cache(service, df, folder_id, existing_id=None):
     csv_buffer = io.StringIO()
     df.to_csv(csv_buffer, index=False)
     media_body = MediaIoBaseUpload(io.BytesIO(csv_buffer.getvalue().encode()), mimetype='text/csv')
-
     if existing_id:
         service.files().update(fileId=existing_id, media_body=media_body).execute()
     else:
+        # Note: This usually fails with Service Accounts unless you made the file first
         meta = {'name': MASTER_CSV_NAME, 'parents': [folder_id]}
         service.files().create(body=meta, media_body=media_body).execute()
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def sync_drive_data(_service, folder_id):
-    """
-    The Core Logic:
-    1. Load Cache CSV
-    2. Check for new files
-    3. Download only new files
-    4. Save updated Cache
-    """
-    # 1. Load Master Cache
-    master_df, master_id = get_master_cache_data(_service, folder_id)
+    """Incremental Sync Logic."""
+    master_df, master_id = get_master_cache(_service, folder_id)
+    
+    # Define columns to match your original script
+    cols = ['day_name', 'date', 'time', 'attribute', 'value', 'info_symbol', 'info_txt', 'source_file_id']
+    
     if master_df is None:
-        master_df = pd.DataFrame(columns=[
-            'day_name', 'date', 'time', 'attribute', 'value', 
-            'info_symbol', 'info_txt', 'source_file_id'
-        ])
+        master_df = pd.DataFrame(columns=cols)
     
     processed_ids = set(master_df['source_file_id'].unique()) if not master_df.empty else set()
 
-    # 2. Scan for ALL text files (Metadata only)
+    # Scan for new files
     all_files_meta = []
     page_token = None
     while True:
         q = f"'{folder_id}' in parents and name contains '.txt' and trashed=false"
-        res = _service.files().list(q=q, fields="nextPageToken, files(id, name)", pageToken=page_token).execute()
+        res = _service.files().list(q=q, fields="nextPageToken, files(id)", pageToken=page_token).execute()
         all_files_meta.extend(res.get('files', []))
         page_token = res.get('nextPageToken')
         if not page_token: break
     
-    # 3. Identify New Files
     new_files = [f for f in all_files_meta if f['id'] not in processed_ids]
     
-    if not new_files:
-        return master_df # Nothing to do
-
-    # 4. Download New Files
-    new_rows = []
-    status_text = st.empty()
-    prog_bar = st.progress(0)
-    
-    for i, f in enumerate(new_files):
-        if i % 10 == 0:
-            status_text.text(f"Syncing new file {i+1}/{len(new_files)}...")
-            prog_bar.progress((i+1)/len(new_files))
-            
-        content = download_file_content(_service, f['id'])
-        if content:
-            file_rows = parse_txt_content(content, f['id'])
-            new_rows.extend(file_rows)
-            
-    prog_bar.empty()
-    status_text.empty()
-
-    # 5. Merge and Save
-    if new_rows:
-        new_df = pd.DataFrame(new_rows, columns=master_df.columns)
-        full_df = pd.concat([master_df, new_df], ignore_index=True)
+    if new_files:
+        new_rows = []
+        status_text = st.empty()
+        prog_bar = st.progress(0)
         
-        # Determine if we should update cloud cache (Only if service acct has permission)
-        try:
-            status_text.text("Updating Cloud Cache...")
-            upload_master_cache_data(_service, full_df, folder_id, master_id)
-            status_text.empty()
-        except Exception as e:
-            st.warning(f"Could not update Cloud Cache (Check Permissions): {e}")
+        for i, f in enumerate(new_files):
+            if i % 10 == 0:
+                status_text.text(f"Syncing new file {i+1}/{len(new_files)}...")
+                prog_bar.progress((i+1)/len(new_files))
             
-        return full_df
-    
+            content = download_file_content(_service, f['id'])
+            if content:
+                new_rows.extend(parse_txt_content(content, f['id']))
+        
+        prog_bar.empty()
+        status_text.empty()
+        
+        if new_rows:
+            new_df = pd.DataFrame(new_rows, columns=cols)
+            full_df = pd.concat([master_df, new_df], ignore_index=True)
+            try:
+                upload_master_cache(_service, full_df, folder_id, master_id)
+            except: pass
+            return full_df
+            
     return master_df
+
+def bmi_to_kg_list(bmi_range, height):
+    bmi_vs_kg = str(height) + ' cm:  '
+    height /= 100
+    for bmi in bmi_range:
+        for dec in range(0,10,5):
+            bmi_dec = bmi + dec/10
+            bmi_vs_kg = ''.join([bmi_vs_kg, str(bmi_dec), ' = ', f'{bmi_dec * height**2:.1f}', ' kg, '])
+    return bmi_vs_kg[:-2]
 
 # ==========================================
 # 4. MAIN APP LOGIC
 # ==========================================
 
-st.set_page_config(layout="wide", page_title="Weight Tracker")
+h1 = 182
+h2 = h1 + 1
+bmi_start = 25
+bmi_end = 27
 
-# Detect Environment
+os_environ_hostname = os.environ.get('HOSTNAME', 'unknown-host')
+st.write('\'HOSTNAME\' if known: ', os_environ_hostname)
+
+# --- DATA LOADING SWITCH ---
 is_cloud = "gcp_service_account" in st.secrets
-data_loaded = False
 df = pd.DataFrame()
 
 if is_cloud:
     service = get_drive_service()
     if service:
-        with st.spinner("Syncing with Google Drive..."):
+        with st.spinner("Syncing Google Drive..."):
             df = sync_drive_data(service, FOLDER_ID)
-            data_loaded = True
     else:
-        st.error("Authentication Failed.")
+        st.error("Cloud Auth Failed.")
 else:
-    # Local Fallback (Mock data or local file logic)
-    st.info("Local Mode detected. Please implement local file reading if needed.")
-
-if data_loaded and not df.empty:
-    # --- DATA PREPROCESSING ---
-    # Ensure correct types for plotting
-    df['date_time'] = pd.to_datetime(df['date'] + ' ' + df['time'], errors='coerce')
-    df.dropna(subset=['date_time'], inplace=True)
-    df['value'] = pd.to_numeric(df['value'], errors='coerce')
+    # Local Logic
+    drive = 'u:'
+    path_a = 'OneDrive'
+    path_b = 'DRIVE_GOOGLE'
+    path_c = 'Adoric health'
     
-    # Pivot for Analysis
+    if os.environ.get('HOSTNAME') == 'streamlit':
+        full_path = os.getcwd() + '/weight-checks-adoric-or-salter-mibody/Data'
+    else:
+        full_path = os.path.join(drive, '/', path_a, path_b, path_c)
+        if not os.path.exists(full_path): full_path = './Data'
+
+    if rmf:
+        data_line_by_line, numer_of_files, _ = rmf.read_files_to_list(full_path)
+        df = pd.DataFrame(data_line_by_line)
+        # Ensure column names match for local load
+        df.columns = ['day_name', 'date', 'time', 'attribute', 'value', 'info_symbol', 'info_txt']
+
+# ==========================================
+# 5. DATA PRE-PROCESSING
+# ==========================================
+
+if not df.empty:
+    # Ensure correct columns and types
+    df['date'] = df['date'].astype(str)
+    df['time'] = df['time'].astype(str)
+    
+    # Robust Date Parsing (Handles "12/ 19/2025" and standard formats)
+    df['date_time'] = pd.to_datetime(
+        df['date'] + df['time'],
+        format='mixed', # Safe for variations
+        errors='coerce'
+    )
+    df.dropna(subset=['date_time'], inplace=True)
+
+    # Pivot Data
     pivoted_df = df.pivot_table(
         index='date_time', 
         columns='attribute', 
         values='value', 
-        aggfunc='first' # Handle duplicate times if any
+        aggfunc='first' # Handle duplicates
     )
+
+    if 'BMR' in pivoted_df.columns:
+        pivoted_df.drop(columns='BMR', inplace=True)
+        
     pivoted_df.sort_index(ascending=False, inplace=True)
 
-    # --- UI & PLOTTING ---
-    st.title("Weight Tracker")
-    
-    # Date Filtering
-    col1, col2 = st.columns(2)
-    with col1:
-        start_date = st.date_input("Start Date", datetime(2022, 1, 1))
-    
-    filtered_df = pivoted_df[pivoted_df.index.date >= start_date]
+    # ==========================================
+    # 6. YOUR ORIGINAL UI & VISUALS
+    # ==========================================
 
-    # Metrics
-    if 'Weight' in filtered_df.columns:
-        latest_weight = filtered_df['Weight'].iloc[0]
-        prev_weight = filtered_df['Weight'].iloc[1] if len(filtered_df) > 1 else latest_weight
-        delta = latest_weight - prev_weight
-        
-        st.metric("Latest Weight", f"{latest_weight} kg", f"{delta:.1f} kg", delta_color="inverse")
-        
-        # Plot
-        fig = px.scatter(
-            filtered_df, 
-            y='Weight', 
-            title="Weight History",
-            trendline="rolling",
-            trendline_options=dict(window=14), # 14-day moving average
-            trendline_color_override="red"
-        )
-        st.plotly_chart(fig, use_container_width=True)
-
-        # Data Table
-        st.subheader("Recent Data")
-        st.dataframe(filtered_df.head(10))
+    date_when_diagnosed_with_diabetics_type_2 = '2025-05-12'
+    # Use abs() to handle the future date logic error so input doesn't break
+    days_since = (pd.Timestamp.today() - pd.to_datetime(date_when_diagnosed_with_diabetics_type_2)).days
+    
+    if os.environ.get('HOSTNAME') != 'streamlit':
+        try:
+            number_of_recent_readings = int(
+                st.text_input(
+                    'Provide integer number of recent records to dislplay' +
+                    '(default value calculated to start on 2025-05-12).',
+                    str(abs(days_since)) if days_since != 0 else "83"
+                )
+            )
+        except ValueError:
+            st.warning('Not an integer provided! Default value used: 83.')
+            number_of_recent_readings = 83
     else:
-        st.warning("No 'Weight' data found in files.")
+        # Default for cloud if text input logic was specific to 'not streamlit' in your original code
+        # But I'll enable it for cloud too as it's useful
+        number_of_recent_readings = abs(days_since) if days_since != 0 else 83
+        
+    the_first_valid_entry = st.date_input("Remove entries before:", datetime(2022, 1, 1))
 
-else:
-    st.warning("No data found.")
+    fig_01_df = pivoted_df.iloc[:number_of_recent_readings].copy()
+    fig_01_df = fig_01_df[fig_01_df.index >= str(the_first_valid_entry)]
+
+    # Force numeric conversion for plotting
+    cols_to_numeric = ['Weight', 'BMI', 'Bone Mass', 'Muscle Mass', 'Body fat', 'Visceral fat', 'Body water']
+    for c in cols_to_numeric:
+        if c in fig_01_df.columns:
+            fig_01_df[c] = pd.to_numeric(fig_01_df[c], errors='coerce')
+
+    st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1),h1))
+    st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1),h2))
+    st.warning(f'All readings for {days_since} days')    
     
+    if 'Weight' in fig_01_df.columns and 'BMI' in fig_01_df.columns:
+        st.dataframe(fig_01_df[['Weight', 'BMI']])
+
+        start_date = fig_01_df.index[0].date()
+        max_weight = fig_01_df['Weight'].max()
+        min_weight = fig_01_df['Weight'].min()
+        trendline_window = '28D'
+
+        fig_01 = px.scatter(
+            fig_01_df,
+            y='Weight',
+            trendline='rolling',
+            trendline_options=dict(function="mean", window=trendline_window),
+            trendline_color_override="red",
+            range_y=(min_weight-1, max_weight+1),
+            hover_data=['Weight'],
+        )
+        fig_01.update_xaxes(
+            showgrid=True, 
+            gridwidth=1, 
+            gridcolor='#dfdfdf', 
+            tick0=(pd.Timestamp.today().date() - pd.Timedelta(number_of_recent_readings, 'D')),
+            dtick=7*24*60*60*1000,
+            tickangle=90,
+        )
+        fig_01.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#dfdfdf', dtick=1)
+
+        week_day_today = datetime.today().strftime('%A')[:3]
+
+        st.warning(f'Weight readings and a \'{trendline_window}\' trendline')
+        st.plotly_chart(fig_01)
+
+        st.warning('What is our preferred average calculations range?')
+        frequency_for_agg = st.radio(
+            f"Select mothly, weekly (week end Sun), weekly (week end Fri), (week end today: {week_day_today})",
+            [f"W-{week_day_today}", "ME", "W-Sun", "W-Fri"],
+            captions=[
+                f"Weekly {week_day_today} (today)",
+                "Monthly",
+                "Weekly Sun",
+                "Weekly Fri",
+            ],
+            horizontal=True,
+        )
+
+        # Drop non-numeric columns before resampling
+        weight_weekly_average_df = fig_01_df.drop(
+            columns=['Bone Mass', 'Muscle Mass', 'Body fat', 'Visceral fat', 'Body water'], 
+            errors='ignore'
+        ).copy()
+
+        weight_weekly_average_df = weight_weekly_average_df.resample(frequency_for_agg).mean().round(1)
+        weight_weekly_average_df.sort_index(ascending=False, inplace=True)
+        
+        weight_weekly_average_df['weight_change'] = \
+            weight_weekly_average_df['Weight'] - weight_weekly_average_df['Weight'].shift(-1)
+        
+        weight_weekly_average_df.reset_index(inplace=True)
+        weight_weekly_average_df['date_time'] = pd.to_datetime(weight_weekly_average_df['date_time']).dt.date
+        weight_weekly_average_df.set_index('date_time', inplace=True)
+        weight_weekly_average_df.rename(
+            columns={'BMI': 'average_bmi', 'Weight': 'average_weight'},
+            inplace=True
+        )
+
+        st.dataframe(weight_weekly_average_df)
+
+st.write(os.getcwd())
