@@ -1,7 +1,7 @@
 # ==========================================
 # CONFIGURATION
 # ==========================================
-# FOLDER_ID = '15RsQDnJLZTqmqmpQrUsJ-BDEODOmDm5k' # <--- PASTE YOUR FOLDER ID HERE
+# FOLDER_ID = '15RsQDnJLZTqmqmpQrUsJ-BDEODOmDm5k' # <--- PASTE YOUR FOLDER ID HERE ---
 
 import os
 import io
