@@ -17,30 +17,26 @@ from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 # ==========================================
 # 1. CONFIGURATION
 # ==========================================
-# <--- PASTE YOUR FOLDER ID HERE --->
-FOLDER_ID = '15RsQDnJLZTqmqmpQrUsJ-BDEODOmDm5k' 
+FOLDER_ID = '15RsQDnJLZTqmqmpQrUsJ-BDEODOmDm5k'  # <--- REMEMBER TO UPDATE THIS!
 MASTER_CSV_NAME = "processed_weight_data_cache.csv"
 
-# Try to import local module (fails gracefully on cloud)
 try:
     import read_my_file as rmf
 except ImportError:
     rmf = None
 
 # ==========================================
-# 2. PAGE CONFIG (Must be first)
+# 2. PAGE CONFIG
 # ==========================================
 page_layout = st.sidebar.radio("Page layout:", options=['centered', 'wide'])
 st.set_page_config(layout=page_layout, page_title="Weight Tracker")
 
 # ==========================================
-# 3. HELPER FUNCTIONS (CLOUD & PARSING)
+# 3. HELPER FUNCTIONS
 # ==========================================
 
 def parse_txt_content(content, file_id="unknown"):
-    """
-    Parses your specific text format.
-    """
+    """Parses your specific text format."""
     rows = []
     lines = content.strip().split('\n')
     
@@ -64,17 +60,13 @@ def parse_txt_content(content, file_id="unknown"):
         try:
             key_part, rest_part = line.split(':', 1)
             attribute = key_part.strip()
-            
-            # Split rest by spaces
             tokens = re.split(r'\s+', rest_part.strip())
             
             raw_value = tokens[0]
             clean_value = raw_value.replace('kg','').replace('%','').replace('kcal','')
-            
             info_symbol = tokens[1] if len(tokens) > 1 else ""
             info_txt = " ".join(tokens[2:]) if len(tokens) > 2 else ""
             
-            # MATCH YOUR ORIGINAL DATAFRAME COLUMNS + source_file_id
             row = [day_name, date_str, time_str, attribute, clean_value, info_symbol, info_txt, file_id]
             rows.append(row)
         except:
@@ -125,19 +117,25 @@ def upload_master_cache(service, df, folder_id, existing_id=None):
     csv_buffer = io.StringIO()
     df.to_csv(csv_buffer, index=False)
     media_body = MediaIoBaseUpload(io.BytesIO(csv_buffer.getvalue().encode()), mimetype='text/csv')
-    if existing_id:
-        service.files().update(fileId=existing_id, media_body=media_body).execute()
-    else:
-        # Note: This usually fails with Service Accounts unless you made the file first
-        meta = {'name': MASTER_CSV_NAME, 'parents': [folder_id]}
-        service.files().create(body=meta, media_body=media_body).execute()
+    
+    # ADDED EXPLICIT ERROR HANDLING HERE
+    try:
+        if existing_id:
+            service.files().update(fileId=existing_id, media_body=media_body).execute()
+        else:
+            # Note: This usually fails for Service Accounts (Quota)
+            meta = {'name': MASTER_CSV_NAME, 'parents': [folder_id]}
+            service.files().create(body=meta, media_body=media_body).execute()
+        return True
+    except Exception as e:
+        st.error(f"⚠️ UPLOAD FAILED: {e}")
+        return False
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def sync_drive_data(_service, folder_id):
     """Incremental Sync Logic."""
     master_df, master_id = get_master_cache(_service, folder_id)
     
-    # Define columns to match your original script
     cols = ['day_name', 'date', 'time', 'attribute', 'value', 'info_symbol', 'info_txt', 'source_file_id']
     
     if master_df is None:
@@ -145,12 +143,11 @@ def sync_drive_data(_service, folder_id):
     
     processed_ids = set(master_df['source_file_id'].unique()) if not master_df.empty else set()
 
-    # Scan for new files
     all_files_meta = []
     page_token = None
     while True:
         q = f"'{folder_id}' in parents and name contains '.txt' and trashed=false"
-        res = _service.files().list(q=q, fields="nextPageToken, files(id)", pageToken=page_token).execute()
+        res = _service.files().list(q=q, fields="nextPageToken, files(id, name)", pageToken=page_token).execute()
         all_files_meta.extend(res.get('files', []))
         page_token = res.get('nextPageToken')
         if not page_token: break
@@ -177,10 +174,17 @@ def sync_drive_data(_service, folder_id):
         if new_rows:
             new_df = pd.DataFrame(new_rows, columns=cols)
             full_df = pd.concat([master_df, new_df], ignore_index=True)
-            try:
-                upload_master_cache(_service, full_df, folder_id, master_id)
-            except: pass
+            
+            # Try to upload
+            status_text.text("Updating Cloud Cache (Saving to Google Drive)...")
+            success = upload_master_cache(_service, full_df, folder_id, master_id)
+            if success:
+                st.toast("Cache Saved Successfully!", icon="✅")
+            status_text.empty()
+            
             return full_df
+        else:
+             st.warning("Downloaded files but found NO valid data rows. Parser might be mismatching.")
             
     return master_df
 
@@ -232,32 +236,28 @@ else:
     if rmf:
         data_line_by_line, numer_of_files, _ = rmf.read_files_to_list(full_path)
         df = pd.DataFrame(data_line_by_line)
-        # Ensure column names match for local load
         df.columns = ['day_name', 'date', 'time', 'attribute', 'value', 'info_symbol', 'info_txt']
 
 # ==========================================
-# 5. DATA PRE-PROCESSING
+# 5. DATA PRE-PROCESSING & VISUALS
 # ==========================================
 
 if not df.empty:
-    # Ensure correct columns and types
     df['date'] = df['date'].astype(str)
     df['time'] = df['time'].astype(str)
     
-    # Robust Date Parsing (Handles "12/ 19/2025" and standard formats)
     df['date_time'] = pd.to_datetime(
         df['date'] + df['time'],
-        format='mixed', # Safe for variations
+        format='mixed', 
         errors='coerce'
     )
     df.dropna(subset=['date_time'], inplace=True)
 
-    # Pivot Data
     pivoted_df = df.pivot_table(
         index='date_time', 
         columns='attribute', 
         values='value', 
-        aggfunc='first' # Handle duplicates
+        aggfunc='first'
     )
 
     if 'BMR' in pivoted_df.columns:
@@ -265,37 +265,17 @@ if not df.empty:
         
     pivoted_df.sort_index(ascending=False, inplace=True)
 
-    # ==========================================
-    # 6. YOUR ORIGINAL UI & VISUALS
-    # ==========================================
-
+    # --- YOUR ORIGINAL VISUALS ---
     date_when_diagnosed_with_diabetics_type_2 = '2025-05-12'
-    # Use abs() to handle the future date logic error so input doesn't break
     days_since = (pd.Timestamp.today() - pd.to_datetime(date_when_diagnosed_with_diabetics_type_2)).days
     
-    if os.environ.get('HOSTNAME') != 'streamlit':
-        try:
-            number_of_recent_readings = int(
-                st.text_input(
-                    'Provide integer number of recent records to dislplay' +
-                    '(default value calculated to start on 2025-05-12).',
-                    str(abs(days_since)) if days_since != 0 else "83"
-                )
-            )
-        except ValueError:
-            st.warning('Not an integer provided! Default value used: 83.')
-            number_of_recent_readings = 83
-    else:
-        # Default for cloud if text input logic was specific to 'not streamlit' in your original code
-        # But I'll enable it for cloud too as it's useful
-        number_of_recent_readings = abs(days_since) if days_since != 0 else 83
+    number_of_recent_readings = abs(days_since) if days_since != 0 else 83
         
     the_first_valid_entry = st.date_input("Remove entries before:", datetime(2022, 1, 1))
 
     fig_01_df = pivoted_df.iloc[:number_of_recent_readings].copy()
     fig_01_df = fig_01_df[fig_01_df.index >= str(the_first_valid_entry)]
 
-    # Force numeric conversion for plotting
     cols_to_numeric = ['Weight', 'BMI', 'Bone Mass', 'Muscle Mass', 'Body fat', 'Visceral fat', 'Body water']
     for c in cols_to_numeric:
         if c in fig_01_df.columns:
@@ -350,7 +330,6 @@ if not df.empty:
             horizontal=True,
         )
 
-        # Drop non-numeric columns before resampling
         weight_weekly_average_df = fig_01_df.drop(
             columns=['Bone Mass', 'Muscle Mass', 'Body fat', 'Visceral fat', 'Body water'], 
             errors='ignore'
