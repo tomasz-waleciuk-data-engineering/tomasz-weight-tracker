@@ -131,7 +131,7 @@ def upload_master_cache(service, df, folder_id, existing_id=None):
         st.error(f"⚠️ UPLOAD FAILED: {e}")
         return False
 
-@st.cache_data(ttl=3600, show_spinner=False)
+
 def sync_drive_data(_service, folder_id):
     """Incremental Sync Logic."""
     master_df, master_id = get_master_cache(_service, folder_id)
