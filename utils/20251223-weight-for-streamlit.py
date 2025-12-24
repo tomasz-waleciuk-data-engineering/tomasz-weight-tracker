@@ -207,7 +207,7 @@ bmi_start = 25
 bmi_end = 27
 
 os_environ_hostname = os.environ.get('HOSTNAME', 'unknown-host')
-st.write('\'HOSTNAME\' if srutututu known: ', os_environ_hostname)
+st.write('\'HOSTNAME\' if known: ', os_environ_hostname)
 
 # --- DATA LOADING SWITCH ---
 is_cloud = "gcp_service_account" in st.secrets
