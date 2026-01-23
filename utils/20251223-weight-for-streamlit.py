@@ -1,7 +1,6 @@
 # ==========================================
 # CONFIGURATION
 # ==========================================
-# FOLDER_ID = '15RsQDnJLZTqmqmpQrUsJ-BDEODOmDm5k' # <--- PASTE YOUR FOLDER ID HERE ---
 
 import os
 import io
@@ -19,6 +18,9 @@ from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 # ==========================================
 FOLDER_ID = '15RsQDnJLZTqmqmpQrUsJ-BDEODOmDm5k'  # <--- REMEMBER TO UPDATE THIS!
 MASTER_CSV_NAME = "processed_weight_data_cache.csv"
+DATE_WHEN_DIAGNOSED_WITH_DIABETES_TYPE_2 = '2025-05-12'
+USE_OTHER_START_DATE = False
+CHOSEN_START_DATE = USE_OTHER_START_DATE or DATE_WHEN_DIAGNOSED_WITH_DIABETES_TYPE_2
 
 try:
     import read_my_file as rmf
@@ -265,9 +267,9 @@ if not df.empty:
         
     pivoted_df.sort_index(ascending=False, inplace=True)
 
-    # --- YOUR ORIGINAL VISUALS ---
-    date_when_diagnosed_with_diabetics_type_2 = '2025-05-12'
-    days_since = (pd.Timestamp.today() - pd.to_datetime(date_when_diagnosed_with_diabetics_type_2)).days
+    # --- ORIGINAL VISUALS ---
+    
+    days_since = (pd.Timestamp.today() - pd.to_datetime(CHOSEN_START_DATE)).days
     
     number_of_recent_readings = abs(days_since) if days_since != 0 else 83
         
@@ -283,13 +285,7 @@ if not df.empty:
 
     st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1),h1))
     st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1),h2))
-    st.warning(f'All readings for {days_since} days')    
-    
-    # # --- PASTE THIS DEBUG BLOCK ---
-    # st.error("--- DEBUGGING COLUMNS ---")
-    # st.write("Columns found:", fig_01_df.columns.tolist())
-    # st.write("First 5 rows of data:", fig_01_df.head())
-    # # ------------------------------
+    st.warning(f'All readings for {days_since} days')        
     
     if 'Weight' in fig_01_df.columns and 'BMI' in fig_01_df.columns:
         st.dataframe(fig_01_df[['Weight', 'BMI']])
