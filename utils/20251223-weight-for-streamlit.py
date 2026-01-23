@@ -273,7 +273,7 @@ if not df.empty:
     
     number_of_recent_readings = abs(days_since) if days_since != 0 else 83
         
-    the_first_valid_entry = st.date_input("Remove entries before:", datetime(2022, 1, 1))
+    the_first_valid_entry = st.date_input("Remove entries before (consider 2022-01-01):", datetime(2025, 5, 12))  # datetime(2022, 1, 1))
 
     fig_01_df = pivoted_df.iloc[:number_of_recent_readings].copy()
     fig_01_df = fig_01_df[fig_01_df.index >= str(the_first_valid_entry)]
