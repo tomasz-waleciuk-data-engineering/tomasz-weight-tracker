@@ -285,7 +285,7 @@ if not df.empty:
     h2 = h1  # + 1
     # bmi_start = 25
     # bmi_end = 26
-    bmi_end = int(fig_01_df['Weight'].min() / h1**2)
+    bmi_end = int(fig_01_df['Weight'].min() / ((h1/100)**2))
     bmi_start = bmi_end - 1
     bmi_step = 0.1
     
