@@ -205,7 +205,7 @@ def bmi_to_kg_list(bmi_range, height):
 # ==========================================
 
 h1 = 182
-h2 = h1 + 1
+h2 = h1  # + 1
 bmi_start = 25
 bmi_end = 27
 bmi_step = 0.1
@@ -285,8 +285,9 @@ if not df.empty:
         if c in fig_01_df.columns:
             fig_01_df[c] = pd.to_numeric(fig_01_df[c], errors='coerce')
 
-    st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1),h1))
-    st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1),h2))
+    st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1, bmi_step),h1))
+    if f1 h1 != h2:
+        st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1, bmi_step),h2))
     st.warning(f'All readings for {days_since} days')        
     
     if 'Weight' in fig_01_df.columns and 'BMI' in fig_01_df.columns:
