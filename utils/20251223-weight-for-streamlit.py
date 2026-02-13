@@ -191,14 +191,14 @@ def sync_drive_data(_service, folder_id):
             
     return master_df
 
-def bmi_to_kg_list(bmi_range, height):
+def bmi_to_kg_list(bmi_range, bmi_step, height):
     bmi_vs_kg = str(height) + ' cm:  '
     height /= 100
     for bmi in bmi_range:
-        # for dec in range(0,10,5):
-        #     bmi_dec = bmi + dec/10
-        #     bmi_vs_kg = ''.join([bmi_vs_kg, str(bmi_dec), ' = ', f'{bmi_dec * height**2:.1f}', ' kg, '])
-        bmi_vs_kg = ''.join([bmi_vs_kg, str(bmi), ' = ', f'{bmi * height**2:.1f}', ' kg, '])
+        for dec in range(0,1/bmi_step,10*bmi_step):
+            bmi_dec = bmi + dec/10
+            bmi_vs_kg = ''.join([bmi_vs_kg, str(bmi_dec), ' = ', f'{bmi_dec * height**2:.1f}', ' kg, '])
+        
     return bmi_vs_kg[:-2]
 
 # ==========================================
@@ -286,9 +286,9 @@ if not df.empty:
         if c in fig_01_df.columns:
             fig_01_df[c] = pd.to_numeric(fig_01_df[c], errors='coerce')
 
-    st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1, bmi_step),h1))
+    st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1), bmi_step, h1))
     if h1 != h2:
-        st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1, bmi_step),h2))
+        st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1), bmi_step, h2))
     st.warning(f'All readings for {days_since} days')        
     
     if 'Weight' in fig_01_df.columns and 'BMI' in fig_01_df.columns:
