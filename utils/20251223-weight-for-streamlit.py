@@ -194,9 +194,10 @@ def bmi_to_kg_list(bmi_range, height):
     bmi_vs_kg = str(height) + ' cm:  '
     height /= 100
     for bmi in bmi_range:
-        for dec in range(0,10,5):
-            bmi_dec = bmi + dec/10
-            bmi_vs_kg = ''.join([bmi_vs_kg, str(bmi_dec), ' = ', f'{bmi_dec * height**2:.1f}', ' kg, '])
+        # for dec in range(0,10,5):
+        #     bmi_dec = bmi + dec/10
+        #     bmi_vs_kg = ''.join([bmi_vs_kg, str(bmi_dec), ' = ', f'{bmi_dec * height**2:.1f}', ' kg, '])
+        bmi_vs_kg = ''.join([bmi_vs_kg, str(bmi), ' = ', f'{bmi * height**2:.1f}', ' kg, '])
     return bmi_vs_kg[:-2]
 
 # ==========================================
@@ -207,6 +208,7 @@ h1 = 182
 h2 = h1 + 1
 bmi_start = 25
 bmi_end = 27
+bmi_step = 0.1
 
 os_environ_hostname = os.environ.get('HOSTNAME', 'unknown-host')
 st.write('\'HOSTNAME\' if known: ', os_environ_hostname)
