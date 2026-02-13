@@ -195,7 +195,7 @@ def bmi_to_kg_list(bmi_range, bmi_step, height):
     bmi_vs_kg = str(height) + ' cm:  '
     height /= 100
     for bmi in bmi_range:
-        for dec in range(0,1/bmi_step,10*bmi_step):
+        for dec in range(0,int(1/bmi_step),int(10*bmi_step)):
             bmi_dec = bmi + dec/10
             bmi_vs_kg = ''.join([bmi_vs_kg, str(bmi_dec), ' = ', f'{bmi_dec * height**2:.1f}', ' kg, '])
         
