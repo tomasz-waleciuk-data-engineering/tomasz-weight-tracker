@@ -192,14 +192,16 @@ def sync_drive_data(_service, folder_id):
     return master_df
 
 def bmi_to_kg_list(bmi_range, bmi_step, height):
+    separtor = '   ---   '
     bmi_vs_kg = str(height) + ' cm:  '
     height /= 100
     for bmi in bmi_range:
         for dec in range(0,int(1/bmi_step),int(10*bmi_step)):
             bmi_dec = bmi + dec/10
             bmi_vs_kg = ''.join([bmi_vs_kg, str(bmi_dec), ' = ', f'{bmi_dec * height**2:.1f}', ' kg, '])
+            bmi_vs_kg = bmi_vs_kg.replace(', ', separator)
         
-    return bmi_vs_kg[:-2]
+    return bmi_vs_kg[:-len(separator)]
 
 # ==========================================
 # 4. MAIN APP LOGIC
