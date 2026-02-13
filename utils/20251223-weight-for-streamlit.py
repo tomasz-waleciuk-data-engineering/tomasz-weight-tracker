@@ -19,6 +19,7 @@ from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 FOLDER_ID = '15RsQDnJLZTqmqmpQrUsJ-BDEODOmDm5k'  # <--- REMEMBER TO UPDATE THIS!
 MASTER_CSV_NAME = "processed_weight_data_cache.csv"
 DATE_WHEN_DIAGNOSED_WITH_DIABETES_TYPE_2 = '2025-05-12'
+DATE_WHEN_DIAGNOSED_WITH_DIABETES_TYPE_2_date_format = datetime(2025, 5, 12)
 USE_OTHER_START_DATE = '2020-01-01'
 CHOSEN_START_DATE = USE_OTHER_START_DATE or DATE_WHEN_DIAGNOSED_WITH_DIABETES_TYPE_2
 
@@ -275,7 +276,7 @@ if not df.empty:
     
     number_of_recent_readings = abs(days_since) if days_since != 0 else 83
         
-    the_first_valid_entry = st.date_input("Remove entries before (consider 2022-01-01):", datetime(2025, 5, 12))  # datetime(2022, 1, 1))
+    the_first_valid_entry = st.date_input("Remove entries before (consider 2022-01-01):", DATE_WHEN_DIAGNOSED_WITH_DIABETES_TYPE_2_date_format)  # datetime(2022, 1, 1))
 
     fig_01_df = pivoted_df.iloc[:number_of_recent_readings].copy()
     fig_01_df = fig_01_df[fig_01_df.index >= str(the_first_valid_entry)]
@@ -286,7 +287,7 @@ if not df.empty:
             fig_01_df[c] = pd.to_numeric(fig_01_df[c], errors='coerce')
 
     st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1, bmi_step),h1))
-    if f1 h1 != h2:
+    if h1 != h2:
         st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1, bmi_step),h2))
     st.warning(f'All readings for {days_since} days')        
     
