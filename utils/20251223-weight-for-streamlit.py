@@ -271,7 +271,7 @@ if not df.empty:
     
     the_first_valid_entry = st.date_input("Remove entries before (consider 2022-01-01):", CHOSEN_START_DATE_DATE_FORMAT)  # datetime(2022, 1, 1))
 
-    days_since = (pd.Timestamp.today() - the_first_valid_entry).days
+    days_since = (pd.Timestamp.today() - pd.to_datetime(the_first_valid_entry)).days
     
     number_of_recent_readings = abs(days_since) if days_since != 0 else 28
         
