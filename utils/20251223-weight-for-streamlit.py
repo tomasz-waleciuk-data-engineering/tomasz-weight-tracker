@@ -275,7 +275,7 @@ if not df.empty:
     
     number_of_recent_readings = abs(days_since) if days_since != 0 else 28
         
-    fig_01_df = pivoted_df.iloc[:number_of_recent_readings].copy()
+    fig_01_df = pivoted_df.copy() # removed slicing - iloc[:number_of_recent_readings].
     fig_01_df = fig_01_df[fig_01_df.index >= str(the_first_valid_entry)]
 
     cols_to_numeric = ['Weight', 'BMI', 'Bone Mass', 'Muscle Mass', 'Body fat', 'Visceral fat', 'Body water']
