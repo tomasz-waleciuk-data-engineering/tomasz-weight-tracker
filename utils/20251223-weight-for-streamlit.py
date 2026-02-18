@@ -19,9 +19,10 @@ from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 FOLDER_ID = '15RsQDnJLZTqmqmpQrUsJ-BDEODOmDm5k'  # <--- REMEMBER TO UPDATE THIS!
 MASTER_CSV_NAME = "processed_weight_data_cache.csv"
 DATE_WHEN_DIAGNOSED_WITH_DIABETES_TYPE_2 = '2025-05-12'
-DATE_WHEN_DIAGNOSED_WITH_DIABETES_TYPE_2_date_format = datetime(2025, 5, 12)
+# DATE_WHEN_DIAGNOSED_WITH_DIABETES_TYPE_2_DATE_FORMAT = pd.to_datetime(DATE_WHEN_DIAGNOSED_WITH_DIABETES_TYPE_2)
 USE_OTHER_START_DATE = ''
 CHOSEN_START_DATE = USE_OTHER_START_DATE or DATE_WHEN_DIAGNOSED_WITH_DIABETES_TYPE_2
+CHOSEN_START_DATE_DATE_FORMAT = pd.to_datetime(CHOSEN_START_DATE)
 
 try:
     import read_my_file as rmf
@@ -192,7 +193,7 @@ def sync_drive_data(_service, folder_id):
     return master_df
 
 def bmi_to_kg_list(bmi_range, bmi_step, height):
-    separator = ' . . --- . . '
+    separator = ' ______ '
     bmi_vs_kg = str(height) + ' cm:  '
     height /= 100
     for bmi in bmi_range:
@@ -268,12 +269,12 @@ if not df.empty:
 
     # --- ORIGINAL VISUALS ---
     
-    days_since = (pd.Timestamp.today() - pd.to_datetime(CHOSEN_START_DATE)).days
-    
-    number_of_recent_readings = abs(days_since) if days_since != 0 else 83
-        
-    the_first_valid_entry = st.date_input("Remove entries before (consider 2022-01-01):", DATE_WHEN_DIAGNOSED_WITH_DIABETES_TYPE_2_date_format)  # datetime(2022, 1, 1))
+    the_first_valid_entry = st.date_input("Remove entries before (consider 2022-01-01):", CHOSEN_START_DATE_DATE_FORMAT)  # datetime(2022, 1, 1))
 
+    days_since = (pd.Timestamp.today() - the_first_valid_entry).days
+    
+    number_of_recent_readings = abs(days_since) if days_since != 0 else 28
+        
     fig_01_df = pivoted_df.iloc[:number_of_recent_readings].copy()
     fig_01_df = fig_01_df[fig_01_df.index >= str(the_first_valid_entry)]
 
