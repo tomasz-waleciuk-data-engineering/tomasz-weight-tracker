@@ -295,10 +295,10 @@ if not df.empty:
     bmi_step = 0.1
 
     resultant_bmi_data = bmi_to_kg_list(range(bmi_start, bmi_end+1), bmi_step, h1)
-    # st.warning('version 20260223_123910')
+    # st.warning('version 20260223_210120')
     # st.write(resultant_bmi_data[0])
     # st.write(resultant_bmi_data[1])    
-    st.dataframe(pd.DataFrame([resultant_bmi_data[1]]))
+    st.dataframe(pd.DataFrame([resultant_bmi_data[1]]), hide_index=True)
     # st.dataframe(
     #     pd.DataFrame.from_dict(resultant_bmi_data[1], orient='index', columns=['Value'])
     # )
