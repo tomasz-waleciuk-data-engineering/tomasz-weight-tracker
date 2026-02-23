@@ -193,16 +193,18 @@ def sync_drive_data(_service, folder_id):
     return master_df
 
 def bmi_to_kg_list(bmi_range, bmi_step, height):
+    bmi_dict = dict()
     separator = ' ______ '
     bmi_vs_kg = str(height) + ' cm:  '
     height /= 100
     for bmi in bmi_range:
         for dec in range(0,int(1/bmi_step),int(10*bmi_step)):
             bmi_dec = bmi + dec/10
+            bmi_dict[bmi_dec] = bmi_dec * height**2
             bmi_vs_kg = ''.join([bmi_vs_kg, str(bmi_dec), ' = ', f'{bmi_dec * height**2:.1f}', ' kg, '])
             bmi_vs_kg = bmi_vs_kg.replace(', ', separator)
         
-    return bmi_vs_kg[:-len(separator)]
+    return bmi_vs_kg[:-len(separator)], bmi_dict
 
 # ==========================================
 # 4. MAIN APP LOGIC
@@ -292,7 +294,9 @@ if not df.empty:
     bmi_start = bmi_end - 1
     bmi_step = 0.1
     
-    st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1), bmi_step, h1))    
+    st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1), bmi_step, h1)[0])
+    st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1), bmi_step, h1)[1])    
+    
     if h1 != h2:
         st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1), bmi_step, h2))
     st.warning(f'All readings for {days_since} days')        
