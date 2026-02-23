@@ -293,9 +293,11 @@ if not df.empty:
     bmi_end = int(fig_01_df['Weight'].min() / ((h1/100)**2))
     bmi_start = bmi_end - 1
     bmi_step = 0.1
-    
-    st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1), bmi_step, h1)[0])
-    st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1), bmi_step, h1)[1])    
+
+    resultant_bmi_data = bmi_to_kg_list(range(bmi_start, bmi_end+1), bmi_step, h1)
+    st.write(resultant_bmi_data[0])
+    st.write(resultant_bmi_data[1])    
+    st.dataframe(pd.DataFrame.from_dict(resultant_bmi_data[1]))
     
     if h1 != h2:
         st.write(bmi_to_kg_list(range(bmi_start, bmi_end+1), bmi_step, h2))
