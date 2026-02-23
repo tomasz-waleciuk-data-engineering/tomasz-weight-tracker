@@ -200,7 +200,7 @@ def bmi_to_kg_list(bmi_range, bmi_step, height):
     for bmi in bmi_range:
         for dec in range(0,int(1/bmi_step),int(10*bmi_step)):
             bmi_dec = bmi + dec/10
-            bmi_dict[bmi_dec] = bmi_dec * height**2
+            bmi_dict[bmi_dec] = round(bmi_dec * height**2, 1)
             bmi_vs_kg = ''.join([bmi_vs_kg, str(bmi_dec), ' = ', f'{bmi_dec * height**2:.1f}', ' kg, '])
             bmi_vs_kg = bmi_vs_kg.replace(', ', separator)
         
@@ -295,13 +295,12 @@ if not df.empty:
     bmi_step = 0.1
 
     resultant_bmi_data = bmi_to_kg_list(range(bmi_start, bmi_end+1), bmi_step, h1)
-    st.write(resultant_bmi_data[0])
-    st.write(resultant_bmi_data[1])    
-    
+    # st.write(resultant_bmi_data[0])
+    # st.write(resultant_bmi_data[1])    
     st.dataframe(pd.DataFrame([resultant_bmi_data[1]]))
-    st.dataframe(
-        pd.DataFrame.from_dict(resultant_bmi_data[1], orient='index', columns=['Value'])
-    )
+    # st.dataframe(
+    #     pd.DataFrame.from_dict(resultant_bmi_data[1], orient='index', columns=['Value'])
+    # )
     
     
     if h1 != h2:
