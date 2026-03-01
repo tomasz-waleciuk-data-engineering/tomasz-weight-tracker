@@ -295,6 +295,8 @@ if not df.empty:
     end_date_mean = pd.Timestamp.now()
     start_date_mean = end_date_mean - pd.Timedelta(days=days_for_mean)
     my_bmi_base = fig_01_df.loc[start_date_mean:end_date_mean]['Weight'].mean()
+    st.dataframe(fig_01_df.loc[start_date_mean:end_date_mean])
+    st.warning(my_bmi_base)
     # my_bmi_base fig_01_df['Weight'].min()  # previously hostorical minimum weight was used for bmi base
     bmi_end = int(my_bmi_base / ((h1/100)**2))
     bmi_start = bmi_end - 1
