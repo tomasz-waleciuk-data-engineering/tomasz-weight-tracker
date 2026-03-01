@@ -301,7 +301,7 @@ if not df.empty:
     # st.warning(my_bmi_base)
     # st.warning(str(days_for_mean) + ' /// ' + str(start_date_mean) + ' /// ' + str(end_date_mean))
     # my_bmi_base = fig_01_df['Weight'].min()  # originally historical minimum weight is used for bmi base
-    my_bmi_base = fig_01_df[-14:]['Weight'].mean()  
+    my_bmi_base = fig_01_df['Weight'][-days_for_mean:].mean()  
     bmi_end = int(my_bmi_base / ((h1/100)**2))
     bmi_start = bmi_end - 1
     bmi_step = 0.1
