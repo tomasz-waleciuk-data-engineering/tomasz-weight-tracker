@@ -309,7 +309,7 @@ if not df.empty:
     bmi_step = 0.1
 
     resultant_bmi_data = bmi_to_kg_list(range(bmi_start, bmi_end+1), bmi_step, bmi_shift_down, h1)
-    st.warning('version 20260301_143140 ... bmi_end=' + str(bmi_end))
+    st.warning('version 20260301_143140 ... bmi_start=' + str(bmi_start) + ' ... bmi_end=' + str(bmi_end) + ' ... bmi_shift_up=' + str(bmi_shift_up) + ' ... bmi_shift_down=' + str(bmi_shift_down))
     # st.write(resultant_bmi_data[0])
     # st.write(resultant_bmi_data[1])    
     st.dataframe(pd.DataFrame([resultant_bmi_data[1]]), hide_index=True)
