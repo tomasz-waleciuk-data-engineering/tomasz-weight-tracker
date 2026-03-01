@@ -192,14 +192,14 @@ def sync_drive_data(_service, folder_id):
             
     return master_df
 
-def bmi_to_kg_list(bmi_range, bmi_step, height):
+def bmi_to_kg_list(bmi_range, bmi_step, bmi_shift_down, height):
     bmi_dict = dict()
     separator = ' ______ '
     bmi_vs_kg = str(height) + ' cm:  '
     height /= 100
     for bmi in bmi_range:
         for dec in range(0,int(1/bmi_step),int(10*bmi_step)):
-            bmi_dec = bmi + dec/10
+            bmi_dec = bmi + dec/10 - bmi_shift_down
             bmi_dict[bmi_dec] = round(bmi_dec * height**2, 1)
             # bmi_vs_kg = ''.join([bmi_vs_kg, str(bmi_dec), ' = ', f'{bmi_dec * height**2:.1f}', ' kg, '])
             bmi_vs_kg = ''.join([bmi_vs_kg, str(bmi_dec), ' = ', f'{bmi_dict[bmi_dec]:.1f}', ' kg, '])
@@ -291,6 +291,8 @@ if not df.empty:
     h2 = h1  # + 1
     # bmi_start = 25
     # bmi_end = 26
+    bmi_shift_up = 1
+    bmi_shift_down = 0.5
     days_for_mean = 14  # average from the last x days will be used as "BMI end"
     # end_date_mean = pd.Timestamp.now()
     # start_date_mean = end_date_mean - pd.Timedelta(days=days_for_mean)
@@ -302,11 +304,11 @@ if not df.empty:
     # st.warning(str(days_for_mean) + ' /// ' + str(start_date_mean) + ' /// ' + str(end_date_mean))
     # my_bmi_base = fig_01_df['Weight'].min()  # originally historical minimum weight is used for bmi base
     my_bmi_base = fig_01_df['Weight'][:days_for_mean].mean()  
-    bmi_end = int(my_bmi_base / ((h1/100)**2) + 1)
+    bmi_end = int(my_bmi_base / ((h1/100)**2) + bmi_shift_up)
     bmi_start = bmi_end - 1
     bmi_step = 0.1
 
-    resultant_bmi_data = bmi_to_kg_list(range(bmi_start, bmi_end+1), bmi_step, h1)
+    resultant_bmi_data = bmi_to_kg_list(range(bmi_start, bmi_end+1), bmi_step, bmi_shift_down, h1)
     st.warning('version 20260301_143140 ... bmi_end=' + str(bmi_end))
     # st.write(resultant_bmi_data[0])
     # st.write(resultant_bmi_data[1])    
