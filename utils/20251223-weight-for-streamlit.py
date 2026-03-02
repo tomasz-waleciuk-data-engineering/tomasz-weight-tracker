@@ -366,7 +366,7 @@ if not df.empty:
         st.warning(f'Weight readings and a \'{trendline_window}\' trendline')
         st.plotly_chart(fig_01)
 
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3, col4 = st.columns([2,1,1,1])
         with col1:
             st.metric('start date', str(start_date))
         with col2:
@@ -374,7 +374,7 @@ if not df.empty:
         with col3:
             st.metric('min weight', min_weight)
         with col4:
-            st.metric('weight range', max_weight-min_weight)
+            st.metric('weight range', round(max_weight-min_weight,1))
     
                       
         st.warning('What is our preferred average calculations range?')
