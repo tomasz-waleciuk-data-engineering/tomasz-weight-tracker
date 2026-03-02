@@ -316,9 +316,9 @@ if not df.empty:
     with col1:
         st.metric('bmi_start', bmi_start)
     with col2:
-        st.metric('bmi_end', bmi_end
+        st.metric('bmi_end', bmi_end)
     with col3:
-        st.metric('bmi_shift_up', bmi_shift_up
+        st.metric('bmi_shift_up', bmi_shift_up)
     with col4:
         st.metric('bmi_shift_down', bmi_shift_down)
                   
