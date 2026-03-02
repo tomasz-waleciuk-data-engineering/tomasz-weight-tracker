@@ -368,7 +368,7 @@ if not df.empty:
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric('start date', start_date)
+            st.metric('start date', str(start_date))
         with col2:
             st.metric('max weight', max_weight)
         with col3:
