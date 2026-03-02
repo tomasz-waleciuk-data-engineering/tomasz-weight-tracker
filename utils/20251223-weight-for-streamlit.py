@@ -309,7 +309,19 @@ if not df.empty:
     bmi_step = 0.1
 
     resultant_bmi_data = bmi_to_kg_list(range(bmi_start, bmi_end+1), bmi_step, bmi_shift_down, h1)
-    st.warning('version 20260301_143140 ... bmi_start=' + str(bmi_start) + ' ... bmi_end=' + str(bmi_end) + ' ... bmi_shift_up=' + str(bmi_shift_up) + ' ... bmi_shift_down=' + str(bmi_shift_down))
+    
+    st.warning('version 20260301_143140)
+    
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric('bmi_start', bmi_start)
+    with col2:
+        st.metric('bmi_end', bmi_end
+    with col3:
+        st.metric('bmi_shift_up', bmi_shift_up
+    with col4:
+        st.metric('bmi_shift_down', bmi_shift_down)
+                  
     # st.write(resultant_bmi_data[0])
     # st.write(resultant_bmi_data[1])    
     st.dataframe(pd.DataFrame([resultant_bmi_data[1]]), hide_index=True)
@@ -354,6 +366,17 @@ if not df.empty:
         st.warning(f'Weight readings and a \'{trendline_window}\' trendline')
         st.plotly_chart(fig_01)
 
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric('start date', start_date)
+        with col2:
+            st.metric('max weight', max_weight)
+        with col3:
+            st.metric('min weight', min_weight)
+        with col4:
+            st.metric('weight range', max_weight-min_weight)
+    
+                      
         st.warning('What is our preferred average calculations range?')
         frequency_for_agg = st.radio(
             f"Select mothly, weekly (week end Sun), weekly (week end Fri), (week end today: {week_day_today})",
