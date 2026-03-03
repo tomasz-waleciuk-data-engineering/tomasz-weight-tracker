@@ -340,6 +340,7 @@ if not df.empty:
         start_date = fig_01_df.index[0].date()
         max_weight = fig_01_df['Weight'].max()
         min_weight = fig_01_df['Weight'].min()
+        weight_today = fig_01_df['Weight'][0]
         trendline_window = '28D'
 
         fig_01 = px.scatter(
@@ -366,7 +367,7 @@ if not df.empty:
         st.warning(f'Weight readings and a \'{trendline_window}\' trendline')
         st.plotly_chart(fig_01)
 
-        col1, col2, col3, col4 = st.columns([2,1,1,1])
+        col1, col2, col3, col4, col5 = st.columns([2,1,1,1,1])
         with col1:
             st.metric('start date', str(the_first_valid_entry))
         with col2:
@@ -374,7 +375,9 @@ if not df.empty:
         with col3:
             st.metric('min weight', min_weight)
         with col4:
-            st.metric('weight range', round(max_weight-min_weight,1))
+            st.metric('max weight range', round(max_weight-min_weight,1))
+        with col5:
+            st.metric('change till today', round(max_weight-weight_today,1))
     
                       
         st.warning('What is our preferred average calculations range?')
