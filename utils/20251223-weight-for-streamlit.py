@@ -16,6 +16,7 @@ from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 # ==========================================
 # 1. CONFIGURATION
 # ==========================================
+VERSION_INFO = 'version 20260329_144955'
 FOLDER_ID = '15RsQDnJLZTqmqmpQrUsJ-BDEODOmDm5k'  # <--- REMEMBER TO UPDATE THIS!
 MASTER_CSV_NAME = "processed_weight_data_cache.csv"
 DATE_WHEN_DIAGNOSED_WITH_DIABETES_TYPE_2 = '2025-05-12'
@@ -310,7 +311,7 @@ if not df.empty:
 
     resultant_bmi_data = bmi_to_kg_list(range(bmi_start, bmi_end+1), bmi_step, bmi_shift_down, h1)
     
-    st.warning('version 20260301_143140')
+    st.warning(VERSION_INFO)
     
     # col1, col2, col3, col4 = st.columns(4)
     # with col1:
