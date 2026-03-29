@@ -312,15 +312,15 @@ if not df.empty:
     
     st.warning('version 20260301_143140')
     
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric('bmi_start', bmi_start)
-    with col2:
-        st.metric('bmi_end', bmi_end)
-    with col3:
-        st.metric('bmi_shift_up', bmi_shift_up)
-    with col4:
-        st.metric('bmi_shift_down', bmi_shift_down)
+    # col1, col2, col3, col4 = st.columns(4)
+    # with col1:
+    #     st.metric('bmi_start', bmi_start)
+    # with col2:
+    #     st.metric('bmi_end', bmi_end)
+    # with col3:
+    #     st.metric('bmi_shift_up', bmi_shift_up)
+    # with col4:
+    #     st.metric('bmi_shift_down', bmi_shift_down)
                   
     # st.write(resultant_bmi_data[0])
     # st.write(resultant_bmi_data[1])    
