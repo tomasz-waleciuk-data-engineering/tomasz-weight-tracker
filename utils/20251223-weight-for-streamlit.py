@@ -380,6 +380,15 @@ if not df.empty:
             range_y=(min_weight-1, max_weight+1),
             hover_data=['Weight'],
         )
+        fig_01.update_xaxes(
+            showgrid=True, 
+            gridwidth=1, 
+            gridcolor='#dfdfdf', 
+            tick0=(pd.Timestamp.today().date() - pd.Timedelta(number_of_recent_readings, 'D')),
+            dtick=7*24*60*60*1000,
+            tickangle=90,
+        )
+        fig_01.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#dfdfdf', dtick=1)
         st.warning(f'Weight readings and a \'{trendline_window_long}\' trendline')
         st.plotly_chart(fig_01)
         # second chart with trendline_window_long
