@@ -16,7 +16,7 @@ from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 # ==========================================
 # 1. CONFIGURATION
 # ==========================================
-VERSION_INFO = 'version 20260329_144955'
+VERSION_INFO = 'version 20260407_215155'
 FOLDER_ID = '15RsQDnJLZTqmqmpQrUsJ-BDEODOmDm5k'  # <--- REMEMBER TO UPDATE THIS!
 MASTER_CSV_NAME = "processed_weight_data_cache.csv"
 DATE_WHEN_DIAGNOSED_WITH_DIABETES_TYPE_2 = '2025-05-12'
@@ -343,6 +343,7 @@ if not df.empty:
         min_weight = fig_01_df['Weight'].min()
         weight_today = fig_01_df['Weight'].iloc[0]
         trendline_window = '28D'
+        trendline_window_long = '90D'
 
         fig_01 = px.scatter(
             fig_01_df,
@@ -368,6 +369,24 @@ if not df.empty:
         st.warning(f'Weight readings and a \'{trendline_window}\' trendline')
         st.plotly_chart(fig_01)
 
+        ### ### ### ### ### ### ### ### ### ### ### ### 
+        # second chart with trendline_window_long
+        fig_01 = px.scatter(
+            fig_01_df,
+            y='Weight',
+            trendline='rolling',
+            trendline_options=dict(function="mean", window=trendline_window_long),
+            trendline_color_override="orange",
+            range_y=(min_weight-1, max_weight+1),
+            hover_data=['Weight'],
+        )
+        st.warning(f'Weight readings and a \'{trendline_window_long}\' trendline')
+        st.plotly_chart(fig_01)
+        # second chart with trendline_window_long
+        ### ### ### ### ### ### ### ### ### ### ### ### 
+
+
+        
         col1, col2, col3, col4, col5 = st.columns([2,1,1,1,1])
         with col1:
             st.metric('start date', str(the_first_valid_entry))
