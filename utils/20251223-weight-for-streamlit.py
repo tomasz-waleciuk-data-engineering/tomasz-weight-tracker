@@ -341,7 +341,7 @@ if not df.empty:
         start_date = fig_01_df.index[0].date()
         max_weight = fig_01_df['Weight'].max()
         min_weight = fig_01_df['Weight'].min()
-        weight_today = fig_01_df['Weight'][0]
+        weight_today = fig_01_df['Weight'].iloc[-1]
         trendline_window = '28D'
 
         fig_01 = px.scatter(
